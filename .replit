@@ -1,0 +1,7 @@
+language = "python"
+run = "pip install --no-cache-dir -r requirements.txt && python3 bot.py"
+modules = ["python-3.12"]
+
+[nix]
+channel = "stable-24_05"
+packages = ["cacert", "libxcrypt"]
