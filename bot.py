@@ -1,3 +1,7 @@
+from healthcheck import run as healthcheck_run
+# Запуск HTTP-сервера для Uptime-пингов
+healthcheck_run()
+
 import os
 import asyncio
 import logging
