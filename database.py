@@ -1,8 +1,23 @@
 from sqlalchemy import Column, String, Integer, BigInteger, create_engine
 from sqlalchemy.orm import declarative_base, Session
+from sqlalchemy.pool import StaticPool
+from sqlalchemy import text
+
 
 # Подключаемся к SQLite (файл bot.db в папке проекта)
-engine = create_engine("sqlite:///bot.db", echo=False, future=True)
+engine = create_engine(
+    "sqlite:///bot.db",
+    echo=False,
+    future=True,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool
+)
+
+# Включаем WAL-журнал и полную синхронизацию
+with engine.connect() as conn:
+    conn.execute(text("PRAGMA journal_mode=WAL"))
+    conn.execute(text("PRAGMA synchronous=FULL"))
+
 Base = declarative_base()
 
 # Модель пользователей для базы user_id (для рассылок)
