@@ -29,7 +29,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHANNEL_ID = int(os.getenv("CHANNEL_ID"))
 ADMIN_IDS = {int(i) for i in os.getenv("ADMIN_IDS").split(",")}
 GIFT_URL = os.getenv("GIFT_URL")
-IMAGE_DIR = os.path.join(os.getcwd(), "images")
+IMAGE_DIR = os.path.join(os.getcwd(), "data\images")
 
 # Text constants
 WELCOME_TEMPLATE = (
