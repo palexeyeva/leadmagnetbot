@@ -178,7 +178,7 @@ async def cmd_course(m: Message):
     await send_course(m)
 
 # Services handlers
-def format_services_text():
+async def format_services_text():
     items = "\n".join(SERVICES_ITEMS)
     return f"{SERVICES_HEADER}\n{items}{SERVICES_FOOTER}"
 
@@ -244,6 +244,33 @@ async def cancel(m: Message, state: FSMContext):
         await state.clear()
         await m.answer("Отменено.")
 
+# === ChannelMessage FSM for custom channel posts ===
+class ChannelMessage(StatesGroup):
+    wait = State()
+
+@dp.message(F.text == "/chanel_massage")
+async def ask_channel_message(m: Message, state: FSMContext):
+    if m.from_user.id not in ADMIN_IDS:
+        return
+    await m.answer("Пришлите текст, который нужно опубликовать в канале. /cancel — отменить.")
+    await state.set_state(ChannelMessage.wait)
+
+@dp.message(ChannelMessage.wait)
+async def send_channel_message(m: Message, state: FSMContext):
+    text = m.text
+    await state.clear()
+    bot_user = await bot.get_me()
+    bot_url = f"https://t.me/{bot_user.username}"
+    kb = KBM(inline_keyboard=[
+        [KB(text="🎁 Подарок", url=bot_url)]
+    ])
+    await bot.send_message(
+        chat_id=CHANNEL_ID,
+        text=text,
+        reply_markup=kb
+    )
+    await m.answer("✅ Ваше сообщение отправлено в канал.")
+
 # Startup and main
 def register_commands():
     return [
@@ -264,7 +291,6 @@ async def main():
     finally:
         from database import engine
         engine.dispose()
-
 
 if __name__ == "__main__":
     asyncio.run(main())
