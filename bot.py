@@ -51,17 +51,19 @@ GIFT_TEMPLATE = (
     "<b><u><i>Переходите по кнопке, чтобы читать гайд</i></u></b> 👇"
 )
 
-SUBSCRIBE_PROMPT = "Сначала подпишитесь на канал 👇"
-COURSE_TEXT = "⚡️ Мини-курс стартует скоро. Не выключайте уведомления в боте, чтобы не пропустить запуск!"
+SUBSCRIBE_PROMPT = "Ваш гайд уже готов, чтобы получить его подпишитесь на канал @nechaevaart 👇"
+COURSE_TEXT = ("⚡️ Скоро выйдет мини-курс по самостоятельной «переупаковке» бизнеса.\n\n"
+               "<b>Не выключайте уведомления в боте</b>: спама не будет, только важные напоминания о старте.\n\n"
+               "А пока <b><i><u>присоединяйтесь к моему каналу</u></i></b>, чтобы быть в курсе новостей 👇")
 
 SERVICES_HEADER = "<b>Чем могу быть полезна:</b>\n"
 SERVICES_ITEMS = [
-    "➡️ Лендинги и многостраничные сайты на Tilda / Taplink",
-    "➡️ Редизайн и развитие существующих сайтов",
-    "➡️ Сайты-визитки для экспертов и компаниям",
-    "➡️ Дизайн и верстка приглашений на любые мероприятия",
-    "➡️ Инфографика и презентации для бизнеса",
-    "➡️ Оформление и ведение Pinterest-профилей",
+    "— Лендинги и многостраничные сайты на Tilda / Taplink",
+    "— Редизайн и развитие существующих сайтов",
+    "— Сайты-визитки для экспертов и компаниям",
+    "— Дизайн и верстка приглашений на любые мероприятия",
+    "— Инфографика и презентации для бизнеса",
+    "— Оформление и ведение Pinterest-профилей",
 ]
 SERVICES_FOOTER = (
     "\n\n<i>Свяжитесь со мной в личных сообщениях @Polina_Alex — обсудим, как лучше представить ваш проект.</i>"
@@ -76,6 +78,14 @@ inline_main_kb = KBM(inline_keyboard=[
 
 gift_kb = KBM(inline_keyboard=[
     [KB(text="🎁 Скачать гайд", callback_data="download_guide")]
+])
+
+service_kb = KBM(inline_keyboard=[
+    [KB(text="Перейти в канал", url="https://t.me/+TcE_ofokV6RjM2Qy")]
+])
+
+course_kb = KBM(inline_keyboard=[
+    [KB(text="Перейти в канал", url="https://t.me/+TcE_ofokV6RjM2Qy")]
 ])
 
 subscribe_kb = KBM(inline_keyboard=[
@@ -163,7 +173,8 @@ async def download_guide(c: CallbackQuery):
 async def send_course(target):
     await target.answer_photo(
         photo=FSInputFile(os.path.join(IMAGE_DIR, "course.jpg")),
-        caption=COURSE_TEXT
+        caption=COURSE_TEXT,
+        reply_markup=course_kb
     )
 
 @dp.callback_query(F.data == "course")
@@ -178,7 +189,7 @@ async def cmd_course(m: Message):
     await send_course(m)
 
 # Services handlers
-async def format_services_text():
+def format_services_text():
     items = "\n".join(SERVICES_ITEMS)
     return f"{SERVICES_HEADER}\n{items}{SERVICES_FOOTER}"
 
@@ -186,7 +197,8 @@ async def send_services(target):
     text = format_services_text()
     await target.answer_photo(
         photo=FSInputFile(os.path.join(IMAGE_DIR, "services.jpg")),
-        caption=text
+        caption=text,
+        reply_markup=service_kb
     )
 
 @dp.callback_query(F.data == "services")
@@ -219,6 +231,14 @@ async def ask_announce(m: Message, state: FSMContext):
         return
     await m.answer("Пришлите одно сообщение-шаблон. /cancel — отменить.")
     await state.set_state(Announce.wait)
+
+@dp.message(F.text == "/users")
+async def cmd_users_count(m: Message):
+    if m.from_user.id not in ADMIN_IDS:
+        return
+    count = len(get_all_ids())
+    await m.answer(f"Количество {count} пользователей.")
+
 
 @dp.message(Announce.wait)
 async def do_broadcast(m: Message, state: FSMContext):
@@ -262,7 +282,7 @@ async def send_channel_message(m: Message, state: FSMContext):
     bot_user = await bot.get_me()
     bot_url = f"https://t.me/{bot_user.username}"
     kb = KBM(inline_keyboard=[
-        [KB(text="🎁 Подарок", url=bot_url)]
+        [KB(text="Перейти в бот", url=bot_url)]
     ])
     await bot.send_message(
         chat_id=CHANNEL_ID,
