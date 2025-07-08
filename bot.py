@@ -23,6 +23,8 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.exceptions import TelegramRetryAfter, TelegramForbiddenError
 
+
+
 # Load environment
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -220,6 +222,55 @@ async def stats(m: Message):
     data = get_stats()
     report = ["<b>Статистика бота:</b>\n"] + [f"{event}: {count}" for event, count in data.items()]
     await m.answer("\n".join(report))
+
+class EditButton(StatesGroup):
+    waiting_id = State()
+    waiting_text = State()
+
+@dp.message(F.text == "/edit_button")
+async def cmd_edit_start(m: Message, state: FSMContext):
+    if m.from_user.id not in ADMIN_IDS:
+        return
+    await m.answer("🔹 Введите ID сообщения, в котором нужно обновить кнопку:")
+    await state.set_state(EditButton.waiting_id)
+
+@dp.message(EditButton.waiting_id)
+async def cmd_edit_id(m: Message, state: FSMContext):
+    # сохраняем message_id в хранилище FSM
+    try:
+        msg_id = int(m.text)
+    except ValueError:
+        return await m.answer("❗️ Это не похоже на число, попробуйте ещё раз.")
+    await state.update_data(message_id=msg_id)
+    await m.answer("🔹 Теперь введите новый текст для кнопки:")
+    await state.set_state(EditButton.waiting_text)
+
+@dp.message(EditButton.waiting_text)
+async def cmd_edit_text(m: Message, state: FSMContext):
+    data = await state.get_data()
+    msg_id = data["message_id"]
+    new_text = m.text
+    # формируем новую клавиатуру
+    bot_info = await bot.get_me()
+    bot_url = f"https://t.me/{bot_info.username}"
+    new_kb = KBM(inline_keyboard=[
+        [ KB(text=new_text, url=bot_url) ]
+    ])
+    # редактируем inline-клавиатуру у канального сообщения
+    try:
+        await bot.edit_message_reply_markup(
+            chat_id=CHANNEL_ID,
+            message_id=msg_id,
+            reply_markup=new_kb
+        )
+        await m.answer("✅ Кнопка успешно обновлена.")
+    except Exception as e:
+        await m.answer(f"❌ Не удалось обновить кнопку:\n{e}")
+    finally:
+        await state.clear()
+
+
+
 
 # Broadcast FSM
 class Announce(StatesGroup):
